@@ -149,7 +149,7 @@ enum Pop3Commands {
   ///   c4c9334bac560ecc979e58001b3e22fb
   apop(
     sessionState: SessionState.authorization,
-    command: 'apop',
+    command: 'APOP',
   ),
 
   /// DELE msg
@@ -180,7 +180,7 @@ enum Pop3Commands {
   ///   S: -ERR message 2 already deleted
   dele(
     sessionState: SessionState.transaction,
-    command: 'dele',
+    command: 'DELE',
   ),
 
   /// LIST [msg]
@@ -247,7 +247,7 @@ enum Pop3Commands {
   ///   S: -ERR no such message, only 2 messages in maildrop
   list(
     sessionState: SessionState.transaction,
-    command: 'list',
+    command: 'LIST',
   ),
 
   /// NOOP
@@ -267,7 +267,7 @@ enum Pop3Commands {
   ///   S: +OK
   noop(
     sessionState: SessionState.transaction,
-    command: 'noop',
+    command: 'NOOP',
   ),
 
   /// PASS string
@@ -306,7 +306,7 @@ enum Pop3Commands {
   ///   S: +OK mrose's maildrop has 2 messages (320 octets)
   pass(
     sessionState: SessionState.authorization,
-    command: 'pass',
+    command: 'PASS',
   ),
 
   /// QUIT
@@ -339,7 +339,7 @@ enum Pop3Commands {
   ///   C: QUIT
   quit(
     sessionState: SessionState.update,
-    command: 'quit',
+    command: 'QUIT',
   ),
 
   /// RETR msg
@@ -369,7 +369,7 @@ enum Pop3Commands {
   ///   S: .
   retr(
     sessionState: SessionState.transaction,
-    command: 'retr',
+    command: 'RETR',
   ),
 
   /// RSET
@@ -387,7 +387,7 @@ enum Pop3Commands {
   ///   S: +OK maildrop has 2 messages (320 octets)
   rset(
     sessionState: SessionState.transaction,
-    command: 'rset',
+    command: 'RSET',
   ),
 
   /// STAT
@@ -428,7 +428,7 @@ enum Pop3Commands {
   ///   S: +OK 2 320
   stat(
     sessionState: SessionState.transaction,
-    command: 'stat',
+    command: 'STAT',
   ),
 
   /// TOP msg n
@@ -470,7 +470,7 @@ enum Pop3Commands {
   ///   S: -ERR no such message
   top(
     sessionState: SessionState.transaction,
-    command: 'top',
+    command: 'TOP',
   ),
 
   /// UIDL [msg]
@@ -535,7 +535,7 @@ enum Pop3Commands {
   ///   S: -ERR no such message, only 2 messages in maildrop
   uidl(
     sessionState: SessionState.transaction,
-    command: 'uidl',
+    command: 'UIDL',
   ),
 
   /// USER name
@@ -577,7 +577,7 @@ enum Pop3Commands {
   ///   S: +OK mrose is a real hoopy frood
   user(
     sessionState: SessionState.authorization,
-    command: 'user',
+    command: 'USER',
   );
 
   final SessionState sessionState;
@@ -587,4 +587,24 @@ enum Pop3Commands {
     required this.sessionState,
     required this.command,
   });
+}
+
+class Pop3Response extends Equatable {
+  final String data;
+  final Pop3Commands? lastCommand;
+
+  bool get success => data.startsWith('+OK');
+  // The very first response from teh server.
+  bool get greeting => success && lastCommand == null;
+
+  const Pop3Response({
+    required this.data,
+    required this.lastCommand,
+  });
+
+  @override
+  List<Object?> get props => [
+        data,
+        lastCommand,
+      ];
 }
