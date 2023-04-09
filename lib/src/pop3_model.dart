@@ -13,8 +13,8 @@ enum SessionState {
   /// the USER and PASS command combination and the APOP command.  Both
   /// mechanisms are described later in this document.  Additional
   /// authentication mechanisms are described in [RFC1734](https://www.rfc-editor.org/rfc/rfc1734).
-  /// While there is no single authentication mechanism that is required of all POP3
-  /// servers, a POP3 server must of course support at least one
+  /// While there is no single authentication mechanism that is required of all
+  /// POP3 servers, a POP3 server must of course support at least one
   /// authentication mechanism.
   ///
   /// Once the POP3 server has determined through the use of any
@@ -145,8 +145,8 @@ enum Pop3Commands {
   ///
   ///   In this example, the shared  secret  is  the  string  `tanstaaf'.
   ///   Hence, the MD5 algorithm is applied to the string
-  ///   <1896.697170952@dbc.mtview.ca.us>tanstaaf which produces a digest value of
-  ///   c4c9334bac560ecc979e58001b3e22fb
+  ///   <1896.697170952@dbc.mtview.ca.us>tanstaaf which produces a digest value
+  ///   of c4c9334bac560ecc979e58001b3e22fb
   apop(
     sessionState: SessionState.authorization,
     command: 'APOP',
@@ -257,7 +257,8 @@ enum Pop3Commands {
   /// Restrictions: may only be given in the TRANSACTION state
   ///
   /// Discussion:
-  ///   The POP3 server does nothing, it merely replies with a positive response.
+  ///   The POP3 server does nothing, it merely replies with a positive
+  ///   response.
   ///
   /// Possible Responses:
   ///   +OK
@@ -583,6 +584,7 @@ enum Pop3Commands {
   final SessionState sessionState;
   final String command;
 
+  // ignore: sort_constructors_first
   const Pop3Commands({
     required this.sessionState,
     required this.command,
@@ -590,17 +592,16 @@ enum Pop3Commands {
 }
 
 class Pop3Response extends Equatable {
+  const Pop3Response({
+    required this.data,
+    required this.lastCommand,
+  });
   final String data;
   final Pop3Commands? lastCommand;
 
   bool get success => data.startsWith('+OK');
   // The very first response from teh server.
   bool get greeting => success && lastCommand == null;
-
-  const Pop3Response({
-    required this.data,
-    required this.lastCommand,
-  });
 
   @override
   List<Object?> get props => [

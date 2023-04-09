@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:equatable/equatable.dart';
@@ -8,21 +9,20 @@ import 'package:rxdart/rxdart.dart';
 part 'pop3_model.dart';
 
 class Pop3Client {
-  final String host;
-  final int port;
-  final bool showLogs;
-
-  late final SecureSocket _socket;
-  final _responseStream = BehaviorSubject<Pop3Response>();
-  Pop3Commands? _lastCommand;
-
-  Stream<Pop3Response> get responseStream => _responseStream.stream;
-
   Pop3Client({
     required this.host,
     required this.port,
     this.showLogs = false,
   });
+
+  final String host;
+  final int port;
+  final bool showLogs;
+  late final SecureSocket _socket;
+  final _responseStream = BehaviorSubject<Pop3Response>();
+  Pop3Commands? _lastCommand;
+
+  Stream<Pop3Response> get responseStream => _responseStream.stream;
 
   Future<bool> connect({
     required String user,
@@ -39,7 +39,10 @@ class Pop3Client {
         );
         _responseStream.add(response);
         if (showLogs) {
-          print("${DateTime.now().toIso8601String()}: ${response.data}");
+          log('${DateTime.now().toIso8601String()}: ${response.data}');
+        }
+        if (response.greeting) {
+          _executeCommand(command: Pop3Commands.user, arg1: user);
         }
         if (_lastCommand == Pop3Commands.user && response.success) {
           _executeCommand(command: Pop3Commands.pass, arg1: password);
@@ -48,7 +51,6 @@ class Pop3Client {
           completer.complete(true);
         }
       });
-      _executeCommand(command: Pop3Commands.user, arg1: user);
     } catch (e) {
       completer.complete(false);
     }
@@ -74,7 +76,7 @@ class Pop3Client {
     await _responseStream.close();
   }
 
-  _executeCommand({
+  void _executeCommand({
     required Pop3Commands command,
     String? arg1,
     String? arg2,
