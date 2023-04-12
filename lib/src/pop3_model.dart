@@ -600,6 +600,7 @@ class Pop3Response extends Equatable {
   final Pop3Commands? lastCommand;
 
   bool get success => data.startsWith('+OK');
+  bool get isError => data.startsWith('-ERR');
   // The very first response from teh server.
   bool get greeting => success && lastCommand == null;
 
