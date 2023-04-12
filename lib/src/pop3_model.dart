@@ -435,7 +435,7 @@ enum Pop3Commands {
   /// TOP msg n
   ///
   /// Arguments:
-  ///   a message-number (required) which may NOT refer to to a
+  ///   a message-number (required) which may NOT refer to a
   ///   message marked as deleted, and a non-negative number
   ///   of lines (required)
   ///

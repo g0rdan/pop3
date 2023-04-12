@@ -31,26 +31,30 @@ class Pop3Client {
     final completer = Completer<bool>();
     try {
       _socket = await SecureSocket.connect(host, port);
-      _socket.listen((rawData) {
-        final data = utf8.decode(rawData);
-        final response = Pop3Response(
-          data: data,
-          lastCommand: _lastCommand,
-        );
-        _responseStream.add(response);
-        if (showLogs) {
-          log('${DateTime.now().toIso8601String()}: ${response.data}');
-        }
-        if (response.greeting) {
-          _executeCommand(command: Pop3Commands.user, arg1: user);
-        }
-        if (_lastCommand == Pop3Commands.user && response.success) {
-          _executeCommand(command: Pop3Commands.pass, arg1: password);
-        }
-        if (_lastCommand == Pop3Commands.pass && response.success) {
-          completer.complete(true);
-        }
-      });
+      _socket.listen(
+        (rawData) {
+          final data = utf8.decode(rawData);
+          final response = Pop3Response(
+            data: data,
+            lastCommand: _lastCommand,
+          );
+          _responseStream.add(response);
+          if (showLogs) {
+            log('${DateTime.now().toIso8601String()}: ${response.data}');
+          }
+          if (_lastCommand == null && response.greeting) {
+            _executeCommand(command: Pop3Commands.user, arg1: user);
+            return;
+          }
+          if (_lastCommand == Pop3Commands.user && response.success) {
+            _executeCommand(command: Pop3Commands.pass, arg1: password);
+            return;
+          }
+          if (_lastCommand == Pop3Commands.pass && response.success) {
+            completer.complete(true);
+          }
+        },
+      );
     } catch (e) {
       completer.complete(false);
     }
@@ -58,16 +62,86 @@ class Pop3Client {
     return completer.future;
   }
 
+  void apop({
+    required String user,
+    required String pass,
+  }) {
+    _executeCommand(
+      command: Pop3Commands.apop,
+      arg1: user,
+      arg2: pass,
+    );
+  }
+
+  void dele({
+    required int messageNumber,
+  }) {
+    _executeCommand(
+      command: Pop3Commands.dele,
+      arg1: messageNumber.toString(),
+    );
+  }
+
+  void list({
+    int? messageNumber,
+  }) {
+    _executeCommand(
+      command: Pop3Commands.list,
+      arg1: messageNumber?.toString(),
+    );
+  }
+
   void noop() {
-    _executeCommand(command: Pop3Commands.noop);
+    _executeCommand(
+      command: Pop3Commands.noop,
+    );
   }
 
-  void load([String? index]) {
-    _executeCommand(command: Pop3Commands.list, arg1: index);
+  void quit() {
+    _executeCommand(
+      command: Pop3Commands.quit,
+    );
   }
 
-  void show(int index) {
-    _executeCommand(command: Pop3Commands.retr, arg1: '$index');
+  void retr({
+    required int messageNumber,
+  }) {
+    _executeCommand(
+      command: Pop3Commands.retr,
+      arg1: messageNumber.toString(),
+    );
+  }
+
+  void rset() {
+    _executeCommand(
+      command: Pop3Commands.rset,
+    );
+  }
+
+  void stat() {
+    _executeCommand(
+      command: Pop3Commands.stat,
+    );
+  }
+
+  void top({
+    required int messageNumber,
+    int? lines,
+  }) {
+    _executeCommand(
+      command: Pop3Commands.top,
+      arg1: messageNumber.toString(),
+      arg2: lines?.toString(),
+    );
+  }
+
+  void uidl({
+    int? messageNumber,
+  }) {
+    _executeCommand(
+      command: Pop3Commands.uidl,
+      arg1: messageNumber?.toString(),
+    );
   }
 
   Future<void> disconnect() async {
