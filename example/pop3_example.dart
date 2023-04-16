@@ -6,8 +6,13 @@ void main(List<String> args) async {
     port: 995,
     showLogs: true,
   );
-  final connected = await client.connect(user: 'username', password: 'pass');
+  final connected = await client.connect(
+    user: 'gordin.dan',
+    password: 'hyubypfhikxaxxju',
+  );
+  print('connected: $connected');
   if (connected) {
-    client.noop();
+    final result = await client.noop();
+    print('result: $result');
   }
 }

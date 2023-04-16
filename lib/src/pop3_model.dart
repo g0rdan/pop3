@@ -65,7 +65,7 @@ enum SessionState {
 }
 
 // https://www.rfc-editor.org/rfc/rfc1939
-enum Pop3Commands {
+enum Pop3CommandType {
   /// APOP name digest
   ///
   /// Arguments:
@@ -585,10 +585,13 @@ enum Pop3Commands {
   final String command;
 
   // ignore: sort_constructors_first
-  const Pop3Commands({
+  const Pop3CommandType({
     required this.sessionState,
     required this.command,
   });
+
+  @override
+  String toString() => command;
 }
 
 class Pop3Response extends Equatable {
@@ -597,7 +600,7 @@ class Pop3Response extends Equatable {
     required this.lastCommand,
   });
   final String data;
-  final Pop3Commands? lastCommand;
+  final Pop3CommandType? lastCommand;
 
   bool get success => data.startsWith('+OK');
   bool get isError => data.startsWith('-ERR');

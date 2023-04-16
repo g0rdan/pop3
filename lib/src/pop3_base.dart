@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:equatable/equatable.dart';
+import 'package:pop3/src/pop3_command.dart';
 import 'package:rxdart/rxdart.dart';
 
 part 'pop3_model.dart';
@@ -20,7 +21,7 @@ class Pop3Client {
   final bool showLogs;
   late final SecureSocket _socket;
   final _responseStream = BehaviorSubject<Pop3Response>();
-  Pop3Commands? _lastCommand;
+  Pop3Command? _lastCommand;
 
   Stream<Pop3Response> get responseStream => _responseStream.stream;
 
@@ -36,21 +37,25 @@ class Pop3Client {
           final data = utf8.decode(rawData);
           final response = Pop3Response(
             data: data,
-            lastCommand: _lastCommand,
+            lastCommand: _lastCommand?.type,
           );
+          _lastCommand?.completer.complete(data);
           _responseStream.add(response);
           if (showLogs) {
             log('${DateTime.now().toIso8601String()}: ${response.data}');
           }
           if (_lastCommand == null && response.greeting) {
-            _executeCommand(command: Pop3Commands.user, arg1: user);
+            _executeCommand<String>(
+                command: Pop3Command(type: Pop3CommandType.user), arg1: user);
             return;
           }
-          if (_lastCommand == Pop3Commands.user && response.success) {
-            _executeCommand(command: Pop3Commands.pass, arg1: password);
+          if (_lastCommand?.type == Pop3CommandType.user && response.success) {
+            _executeCommand<String>(
+                command: Pop3Command(type: Pop3CommandType.pass),
+                arg1: password);
             return;
           }
-          if (_lastCommand == Pop3Commands.pass && response.success) {
+          if (_lastCommand?.type == Pop3CommandType.pass && response.success) {
             completer.complete(true);
           }
         },
@@ -62,108 +67,115 @@ class Pop3Client {
     return completer.future;
   }
 
-  void apop({
+  Future<String> apop({
     required String user,
     required String pass,
   }) {
-    _executeCommand(
-      command: Pop3Commands.apop,
+    return _executeCommand<String>(
+      command: Pop3Command(type: Pop3CommandType.apop),
       arg1: user,
       arg2: pass,
     );
   }
 
-  void dele({
+  Future<String> dele({
     required int messageNumber,
   }) {
-    _executeCommand(
-      command: Pop3Commands.dele,
+    return _executeCommand<String>(
+      command: Pop3Command(type: Pop3CommandType.dele),
       arg1: messageNumber.toString(),
     );
   }
 
-  void list({
+  Future<String> list({
     int? messageNumber,
   }) {
-    _executeCommand(
-      command: Pop3Commands.list,
+    return _executeCommand<String>(
+      command: Pop3Command(type: Pop3CommandType.list),
       arg1: messageNumber?.toString(),
     );
   }
 
-  void noop() {
-    _executeCommand(
-      command: Pop3Commands.noop,
+  Future<Pop3Response> noop() async {
+    final responseStr = await _executeCommand<String>(
+      command: Pop3Command(type: Pop3CommandType.noop),
+    );
+    return Pop3Response(
+      data: responseStr,
+      lastCommand: _lastCommand?.type,
     );
   }
 
-  void quit() {
-    _executeCommand(
-      command: Pop3Commands.quit,
+  Future<String> quit() {
+    return _executeCommand<String>(
+      command: Pop3Command(type: Pop3CommandType.quit),
     );
   }
 
-  void retr({
+  Future<String> retr({
     required int messageNumber,
   }) {
-    _executeCommand(
-      command: Pop3Commands.retr,
+    return _executeCommand<String>(
+      command: Pop3Command(type: Pop3CommandType.retr),
       arg1: messageNumber.toString(),
     );
   }
 
-  void rset() {
-    _executeCommand(
-      command: Pop3Commands.rset,
+  Future<String> rset() {
+    return _executeCommand<String>(
+      command: Pop3Command(type: Pop3CommandType.rset),
     );
   }
 
-  void stat() {
-    _executeCommand(
-      command: Pop3Commands.stat,
+  Future<String> stat() {
+    return _executeCommand<String>(
+      command: Pop3Command(type: Pop3CommandType.stat),
     );
   }
 
-  void top({
+  Future<void> top({
     required int messageNumber,
     int? lines,
   }) {
-    _executeCommand(
-      command: Pop3Commands.top,
+    return _executeCommand<String>(
+      command: Pop3Command(type: Pop3CommandType.top),
       arg1: messageNumber.toString(),
       arg2: lines?.toString(),
     );
   }
 
-  void uidl({
+  Future<String> uidl({
     int? messageNumber,
   }) {
-    _executeCommand(
-      command: Pop3Commands.uidl,
+    return _executeCommand<String>(
+      command: Pop3Command(type: Pop3CommandType.uidl),
       arg1: messageNumber?.toString(),
     );
   }
 
   Future<void> disconnect() async {
-    _executeCommand(command: Pop3Commands.quit);
+    await _executeCommand<String>(
+      command: Pop3Command(type: Pop3CommandType.quit),
+    );
     await _socket.close();
     await _responseStream.close();
   }
 
-  void _executeCommand({
-    required Pop3Commands command,
+  Future<T> _executeCommand<T>({
+    required Pop3Command<T> command,
     String? arg1,
     String? arg2,
   }) {
     _lastCommand = command;
     if (arg1 != null && arg2 != null) {
-      _socket.add(utf8.encode('${command.command} $arg1 $arg2\r\n'));
+      _socket.add(utf8.encode('${command.type} $arg1 $arg2\r\n'));
     } else if (arg1 != null) {
-      _socket.add(utf8.encode('${command.command} $arg1\r\n'));
+      _socket.add(utf8.encode('${command.type} $arg1\r\n'));
     } else if (arg2 != null) {
-      _socket.add(utf8.encode('${command.command} $arg2\r\n'));
+      _socket.add(utf8.encode('${command.type} $arg2\r\n'));
     } else {
-      _socket.add(utf8.encode('${command.command}\r\n'));
+      _socket.add(utf8.encode('${command.type}\r\n'));
     }
+    return command.completer.future;
   }
 }
