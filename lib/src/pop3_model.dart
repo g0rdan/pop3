@@ -1,4 +1,4 @@
-part of 'pop3_base.dart';
+part of 'pop3_client.dart';
 
 enum SessionState {
   /// Once the TCP connection has been opened by a POP3 client, the POP3

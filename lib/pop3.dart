@@ -3,4 +3,4 @@
 /// More dartdocs go here.
 library pop3;
 
-export 'src/pop3_base.dart';
+export 'src/pop3_client.dart';

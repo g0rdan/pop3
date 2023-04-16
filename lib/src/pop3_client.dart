@@ -5,7 +5,6 @@ import 'dart:io';
 
 import 'package:equatable/equatable.dart';
 import 'package:pop3/src/pop3_command.dart';
-import 'package:rxdart/rxdart.dart';
 
 part 'pop3_model.dart';
 
@@ -20,10 +19,8 @@ class Pop3Client {
   final int port;
   final bool showLogs;
   late final SecureSocket _socket;
-  final _responseStream = BehaviorSubject<Pop3Response>();
+  // ignore: strict_raw_type
   Pop3Command? _lastCommand;
-
-  Stream<Pop3Response> get responseStream => _responseStream.stream;
 
   Future<bool> connect({
     required String user,
@@ -40,7 +37,6 @@ class Pop3Client {
             lastCommand: _lastCommand?.type,
           );
           _lastCommand?.completer.complete(data);
-          _responseStream.add(response);
           if (showLogs) {
             log('${DateTime.now().toIso8601String()}: ${response.data}');
           }
@@ -158,7 +154,6 @@ class Pop3Client {
       command: Pop3Command(type: Pop3CommandType.quit),
     );
     await _socket.close();
-    await _responseStream.close();
   }
 
   Future<T> _executeCommand<T>({

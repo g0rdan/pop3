@@ -13,6 +13,7 @@ void main(List<String> args) async {
   print('connected: $connected');
   if (connected) {
     final result = await client.noop();
-    print('result: $result');
+    print('success: ${result.success}');
+    await client.disconnect();
   }
 }
