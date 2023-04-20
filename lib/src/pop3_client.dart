@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:equatable/equatable.dart';
 import 'package:pop3/src/pop3_command.dart';
+import 'package:pop3/src/pop3_exception.dart';
 
 part 'pop3_model.dart';
 
@@ -21,6 +22,7 @@ class Pop3Client {
   late final SecureSocket _socket;
   // ignore: strict_raw_type
   Pop3Command? _lastCommand;
+  final _stringBuilder = StringBuffer();
 
   Future<bool> connect({
     required String user,
@@ -34,43 +36,65 @@ class Pop3Client {
           final data = utf8.decode(rawData);
           final response = Pop3Response(
             data: data,
-            lastCommand: _lastCommand?.type,
+            command: _lastCommand,
           );
-          _lastCommand?.completer.complete(data);
+
+          if (rawData.last == 10 && rawData[rawData.length - 2] == 13) {
+            _stringBuilder.write(data);
+            _lastCommand?.completer.complete(_stringBuilder.toString());
+            _stringBuilder.clear();
+          } else {
+            _stringBuilder.write(data);
+          }
+
           if (showLogs) {
             log('${DateTime.now().toIso8601String()}: ${response.data}');
           }
+
           if (_lastCommand == null && response.greeting) {
             _executeCommand<String>(
-                command: Pop3Command(type: Pop3CommandType.user), arg1: user);
+              command: Pop3Command(type: Pop3CommandType.user),
+              arg1: user,
+            );
             return;
           }
+
           if (_lastCommand?.type == Pop3CommandType.user && response.success) {
             _executeCommand<String>(
-                command: Pop3Command(type: Pop3CommandType.pass),
-                arg1: password);
+              command: Pop3Command(type: Pop3CommandType.pass),
+              arg1: password,
+            );
             return;
           }
+
           if (_lastCommand?.type == Pop3CommandType.pass && response.success) {
             completer.complete(true);
           }
         },
+        onError: () {
+          throw Pop3SocketExpetion();
+        },
       );
     } catch (e) {
       completer.complete(false);
+      throw Pop3Expetion();
     }
 
     return completer.future;
   }
 
-  Future<String> apop({
+  Future<Pop3Response> apop({
     required String user,
     required String pass,
-  }) {
-    return _executeCommand<String>(
+  }) async {
+    final responseStr = await _executeCommand<String>(
       command: Pop3Command(type: Pop3CommandType.apop),
       arg1: user,
       arg2: pass,
+    );
+    return Pop3Response(
+      data: responseStr,
+      command: _lastCommand,
     );
   }
 
@@ -83,12 +107,16 @@ class Pop3Client {
     );
   }
 
-  Future<String> list({
+  Future<Pop3Response> list({
     int? messageNumber,
-  }) {
-    return _executeCommand<String>(
+  }) async {
+    final responseStr = await _executeCommand<String>(
       command: Pop3Command(type: Pop3CommandType.list),
       arg1: messageNumber?.toString(),
+    );
+    return Pop3Response(
+      data: responseStr,
+      command: _lastCommand,
     );
   }
 
@@ -98,7 +126,7 @@ class Pop3Client {
     );
     return Pop3Response(
       data: responseStr,
-      lastCommand: _lastCommand?.type,
+      command: _lastCommand,
     );
   }
 
@@ -129,7 +157,7 @@ class Pop3Client {
     );
   }
 
-  Future<void> top({
+  Future<String> top({
     required int messageNumber,
     int? lines,
   }) {

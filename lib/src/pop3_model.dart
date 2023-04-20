@@ -597,19 +597,19 @@ enum Pop3CommandType {
 class Pop3Response extends Equatable {
   const Pop3Response({
     required this.data,
-    required this.lastCommand,
+    required this.command,
   });
   final String data;
-  final Pop3CommandType? lastCommand;
+  final Pop3Command<dynamic>? command;
 
   bool get success => data.startsWith('+OK');
   bool get isError => data.startsWith('-ERR');
   // The very first response from teh server.
-  bool get greeting => success && lastCommand == null;
+  bool get greeting => success && command == null;
 
   @override
   List<Object?> get props => [
         data,
-        lastCommand,
+        command,
       ];
 }

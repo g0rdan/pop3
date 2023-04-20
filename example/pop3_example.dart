@@ -12,8 +12,8 @@ void main(List<String> args) async {
   );
   print('connected: $connected');
   if (connected) {
-    final result = await client.noop();
-    print('success: ${result.success}');
+    final result = await client.top(messageNumber: 1000, lines: 10);
+    print('success: $result');
     await client.disconnect();
   }
 }
