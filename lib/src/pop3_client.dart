@@ -39,7 +39,7 @@ class Pop3Client {
             command: _lastCommand,
           );
 
-          if (rawData.last == 10 && rawData[rawData.length - 2] == 13) {
+          if (rawData.last == LF && rawData[rawData.length - 2] == CR) {
             _stringBuilder.write(data);
             _lastCommand?.completer.complete(_stringBuilder.toString());
             _stringBuilder.clear();
@@ -59,7 +59,8 @@ class Pop3Client {
             return;
           }
 
-          if (_lastCommand?.type == Pop3CommandType.user && response.success) {
+          if (_lastCommand?.type == Pop3CommandType.user &&
+              response.isSuccess) {
             _executeCommand<String>(
               command: Pop3Command(type: Pop3CommandType.pass),
               arg1: password,
@@ -67,16 +68,14 @@ class Pop3Client {
             return;
           }
 
-          if (_lastCommand?.type == Pop3CommandType.pass && response.success) {
+          if (_lastCommand?.type == Pop3CommandType.pass &&
+              response.isSuccess) {
             completer.complete(true);
           }
         },
-        onError: () {
-          throw Pop3SocketExpetion();
-        },
       );
     } catch (e) {
-      completer.complete(false);
+      await _socket.close();
       throw Pop3Expetion();
     }
 
@@ -98,26 +97,38 @@ class Pop3Client {
     );
   }
 
-  Future<String> dele({
+  Future<Pop3Response> dele({
     required int messageNumber,
-  }) {
-    return _executeCommand<String>(
+  }) async {
+    final responseStr = await _executeCommand<String>(
       command: Pop3Command(type: Pop3CommandType.dele),
       arg1: messageNumber.toString(),
     );
+
+    return Pop3Response(
+      data: responseStr,
+      command: _lastCommand,
+    );
   }
 
-  Future<Pop3Response> list({
+  Future<Pop3ListResponse?> list({
     int? messageNumber,
   }) async {
     final responseStr = await _executeCommand<String>(
       command: Pop3Command(type: Pop3CommandType.list),
       arg1: messageNumber?.toString(),
     );
-    return Pop3Response(
+
+    final response = Pop3Response(
       data: responseStr,
       command: _lastCommand,
     );
+
+    if (response.isSuccess) {
+      return Pop3ListResponse(data: response.data);
+    }
+
+    return null;
   }
 
   Future<Pop3Response> noop() async {
@@ -130,50 +141,80 @@ class Pop3Client {
     );
   }
 
-  Future<String> quit() {
-    return _executeCommand<String>(
+  Future<Pop3Response> quit() async {
+    final responseStr = await _executeCommand<String>(
       command: Pop3Command(type: Pop3CommandType.quit),
+    );
+
+    return Pop3Response(
+      data: responseStr,
+      command: _lastCommand,
     );
   }
 
-  Future<String> retr({
+  Future<Pop3Response> retr({
     required int messageNumber,
-  }) {
-    return _executeCommand<String>(
+  }) async {
+    final responseStr = await _executeCommand<String>(
       command: Pop3Command(type: Pop3CommandType.retr),
       arg1: messageNumber.toString(),
     );
+
+    return Pop3Response(
+      data: responseStr,
+      command: _lastCommand,
+    );
   }
 
-  Future<String> rset() {
-    return _executeCommand<String>(
+  Future<Pop3Response> rset() async {
+    final responseStr = await _executeCommand<String>(
       command: Pop3Command(type: Pop3CommandType.rset),
     );
-  }
 
-  Future<String> stat() {
-    return _executeCommand<String>(
-      command: Pop3Command(type: Pop3CommandType.stat),
+    return Pop3Response(
+      data: responseStr,
+      command: _lastCommand,
     );
   }
 
-  Future<String> top({
+  Future<Pop3Response> stat() async {
+    final responseStr = await _executeCommand<String>(
+      command: Pop3Command(type: Pop3CommandType.stat),
+    );
+
+    return Pop3Response(
+      data: responseStr,
+      command: _lastCommand,
+    );
+  }
+
+  Future<Pop3Response> top({
     required int messageNumber,
     int? lines,
-  }) {
-    return _executeCommand<String>(
+  }) async {
+    final responseStr = await _executeCommand<String>(
       command: Pop3Command(type: Pop3CommandType.top),
       arg1: messageNumber.toString(),
       arg2: lines?.toString(),
     );
+
+    return Pop3Response(
+      data: responseStr,
+      command: _lastCommand,
+    );
   }
 
-  Future<String> uidl({
+  Future<Pop3Response> uidl({
     int? messageNumber,
-  }) {
-    return _executeCommand<String>(
+  }) async {
+    final responseStr = await _executeCommand<String>(
       command: Pop3Command(type: Pop3CommandType.uidl),
       arg1: messageNumber?.toString(),
+    );
+
+    return Pop3Response(
+      data: responseStr,
+      command: _lastCommand,
     );
   }
 

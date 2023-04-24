@@ -602,10 +602,11 @@ class Pop3Response extends Equatable {
   final String data;
   final Pop3Command<dynamic>? command;
 
-  bool get success => data.startsWith('+OK');
+  bool get isSuccess => data.startsWith('+OK');
   bool get isError => data.startsWith('-ERR');
   // The very first response from teh server.
-  bool get greeting => success && command == null;
+  bool get greeting => isSuccess && command == null;
+  bool get isMultiLine => data.contains('\n');
 
   @override
   List<Object?> get props => [
@@ -613,3 +614,77 @@ class Pop3Response extends Equatable {
         command,
       ];
 }
+
+class Pop3ListItem extends Equatable {
+  const Pop3ListItem({
+    required this.index,
+    required this.size,
+  });
+
+  final int index;
+  final int size;
+
+  @override
+  List<Object?> get props => [
+        index,
+        size,
+      ];
+}
+
+class Pop3ListResponse extends Equatable {
+  Pop3ListResponse({
+    required this.data,
+  }) {
+    items = _parse(data);
+  }
+
+  late final List<Pop3ListItem> items;
+  final String data;
+
+  List<Pop3ListItem> _parse(String data) {
+    final items = <Pop3ListItem>[];
+    final lines = LineSplitter().convert(data);
+    if (lines.length == 1) {
+      final parts = lines[0].split(' ');
+      final index = int.tryParse(parts[1]);
+      final size = int.tryParse(parts[2]);
+      if (index != null && size != null) {
+        items.add(
+          Pop3ListItem(
+            index: index,
+            size: size,
+          ),
+        );
+      }
+    } else {
+      lines.skip(1).forEach((line) {
+        final parts = line.split(' ');
+        if (parts.length != 2) {
+          return;
+        }
+        final index = int.tryParse(parts[0]);
+        final size = int.tryParse(parts[1]);
+        if (index != null && size != null) {
+          items.add(
+            Pop3ListItem(
+              index: index,
+              size: size,
+            ),
+          );
+        }
+      });
+    }
+    return items;
+  }
+
+  @override
+  List<Object?> get props => [
+        data,
+      ];
+}
+
+// Character constants.
+// ignore: constant_identifier_names
+const int LF = 10;
+// ignore: constant_identifier_names
+const int CR = 13;
