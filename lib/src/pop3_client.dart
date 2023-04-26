@@ -19,7 +19,7 @@ class Pop3Client {
   final String host;
   final int port;
   final bool showLogs;
-  late final SecureSocket _socket;
+  late final Socket _socket;
   // ignore: strict_raw_type
   Pop3Command? _lastCommand;
   final _stringBuilder = StringBuffer();
@@ -27,10 +27,13 @@ class Pop3Client {
   Future<bool> connect({
     required String user,
     required String password,
+    bool secure = true,
   }) async {
     final completer = Completer<bool>();
     try {
-      _socket = await SecureSocket.connect(host, port);
+      _socket = secure
+          ? await SecureSocket.connect(host, port)
+          : await Socket.connect(host, port);
       _socket.listen(
         (rawData) {
           final data = utf8.decode(rawData);
@@ -111,7 +114,7 @@ class Pop3Client {
     );
   }
 
-  Future<Pop3ListResponse?> list({
+  Future<Pop3ListResponse> list({
     int? messageNumber,
   }) async {
     final responseStr = await _executeCommand<String>(
@@ -119,16 +122,10 @@ class Pop3Client {
       arg1: messageNumber?.toString(),
     );
 
-    final response = Pop3Response(
+    return Pop3ListResponse(
       data: responseStr,
       command: _lastCommand,
     );
-
-    if (response.isSuccess) {
-      return Pop3ListResponse(data: response.data);
-    }
-
-    return null;
   }
 
   Future<Pop3Response> noop() async {

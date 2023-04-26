@@ -631,15 +631,15 @@ class Pop3ListItem extends Equatable {
       ];
 }
 
-class Pop3ListResponse extends Equatable {
+class Pop3ListResponse extends Pop3Response {
   Pop3ListResponse({
-    required this.data,
+    required super.data,
+    required super.command,
   }) {
     items = _parse(data);
   }
 
   late final List<Pop3ListItem> items;
-  final String data;
 
   List<Pop3ListItem> _parse(String data) {
     final items = <Pop3ListItem>[];
