@@ -605,8 +605,8 @@ class Pop3Response extends Equatable {
   bool get isSuccess => data.startsWith('+OK');
   bool get isError => data.startsWith('-ERR');
   // The very first response from teh server.
-  bool get greeting => isSuccess && command == null;
-  bool get isMultiLine => data.contains('\n');
+  bool get isGreeting => isSuccess && command == null;
+  bool get isMultiLine => LineSplitter().convert(data).length > 1;
 
   @override
   List<Object?> get props => [

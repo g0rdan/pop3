@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:equatable/equatable.dart';
 import 'package:pop3/src/pop3_command.dart';
 import 'package:pop3/src/pop3_exception.dart';
+import 'package:rxdart/subjects.dart';
 
 part 'pop3_model.dart';
 
@@ -23,17 +24,20 @@ class Pop3Client {
   // ignore: strict_raw_type
   Pop3Command? _lastCommand;
   final _stringBuilder = StringBuffer();
+  final stream = BehaviorSubject<Pop3Response>();
 
   Future<bool> connect({
     required String user,
     required String password,
     bool secure = true,
+    Socket? socket,
   }) async {
     final completer = Completer<bool>();
     try {
-      _socket = secure
-          ? await SecureSocket.connect(host, port)
-          : await Socket.connect(host, port);
+      _socket = socket ??
+          (secure
+              ? await SecureSocket.connect(host, port)
+              : await Socket.connect(host, port));
       _socket.listen(
         (rawData) {
           final data = utf8.decode(rawData);
@@ -41,6 +45,8 @@ class Pop3Client {
             data: data,
             command: _lastCommand,
           );
+
+          stream.add(response);
 
           if (rawData.last == LF && rawData[rawData.length - 2] == CR) {
             _stringBuilder.write(data);
@@ -54,7 +60,7 @@ class Pop3Client {
             log('${DateTime.now().toIso8601String()}: ${response.data}');
           }
 
-          if (_lastCommand == null && response.greeting) {
+          if (_lastCommand == null && response.isGreeting) {
             _executeCommand<String>(
               command: Pop3Command(type: Pop3CommandType.user),
               arg1: user,
@@ -220,6 +226,7 @@ class Pop3Client {
       command: Pop3Command(type: Pop3CommandType.quit),
     );
     await _socket.close();
+    await stream.close();
   }
 
   Future<T> _executeCommand<T>({

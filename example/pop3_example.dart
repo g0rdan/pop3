@@ -12,11 +12,8 @@ void main(List<String> args) async {
   );
   print('connected: $connected');
   if (connected) {
-    final result = await client.top(
-      messageNumber: 1,
-      lines: 10,
-    );
-    print('success: ${result.isMultiLine}');
+    final result = await client.list();
+    print('success: ${result.items[2].size}');
     await client.disconnect();
   }
 }
